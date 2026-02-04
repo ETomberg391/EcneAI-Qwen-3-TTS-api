@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen3-TTS API Test GUI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .audio-player {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .audio-player.show {
+            display: block;
+        }
+        
+        .audio-player audio {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .status.show {
+            display: block;
+        }
+        
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .file-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .help-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .voice-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        .voice-item {
+            padding: 8px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .voice-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .voice-item:last-child {
+            border-bottom: none;
+        }
+        
+        .api-url {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        
+        .api-url input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-family: monospace;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Qwen3-TTS API Test GUI</h1>
+        
+        <!-- API Configuration -->
+        <div class="card">
+            <h2>API Configuration</h2>
+            <div class="api-url">
+                <label>API Base URL</label>
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+            </div>
+            <div class="row">
+                <button class="btn btn-secondary" onclick="checkHealth()">Check Health</button>
+                <button class="btn btn-secondary" onclick="loadSpeakers()">Load Speakers</button>
+            </div>
+            <div id="healthStatus" class="status"></div>
+        </div>
+
+        <!-- Mode Selection Tabs -->
+        <div class="card">
+            <h2>Select Mode</h2>
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('preset')">🎭 Preset Speaker</button>
+                <button class="tab" onclick="switchTab('clone')">🎤 Voice Clone</button>
+                <button class="tab" onclick="switchTab('saved')">💾 Saved Voice</button>
+            </div>
+
+            <!-- Preset Speaker Mode -->
+            <div id="presetTab" class="tab-content active">
+                <form id="presetForm" onsubmit="generatePreset(event)">
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="presetModel">Model</label>
+                            <select id="presetModel">
+                                <option value="qwen3-tts-1.7b-customvoice" selected>qwen3-tts-1.7b-customvoice</option>
+                                <option value="qwen3-tts-0.6b-customvoice">qwen3-tts-0.6b-customvoice</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="presetSpeaker">Speaker</label>
+                            <select id="presetSpeaker">
+                                <option value="Vivian" selected>Vivian (Chinese - Bright, Sharp, Young Female)</option>
+                                <option value="Serena">Serena (Chinese - Warm, Soft, Young Female)</option>
+                                <option value="Uncle_Fu">Uncle_Fu (Chinese - Deep, Mellow, Mature Male)</option>
+                                <option value="Dylan">Dylan (Chinese Beijing - Clear, Natural Young Male)</option>
+                                <option value="Eric">Eric (Chinese Sichuan - Lively, Husky Male)</option>
+                                <option value="Ryan">Ryan (English - Rhythmic, Dynamic Male)</option>
+                                <option value="Aiden">Aiden (English - Sunny, Clear American Male)</option>
+                                <option value="Ono_Anna">Ono_Anna (Japanese - Light, Playful Female)</option>
+                                <option value="Sohee">Sohee (Korean - Emotional, Warm Female)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="presetText">Text to Speak</label>
+                        <textarea id="presetText" placeholder="Enter text here...">Hello! I am a preset speaker. This is a test of the Qwen3-TTS API.</textarea>
+                        <div class="help-text">Tip: Use [pause:0.5] to add pauses</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="presetInstructions">Style/Emotion</label>
+                            <select id="presetInstructions">
+                                <option value="">Default (no instruction)</option>
+                                <option value="happy">Happy / 开心</option>
+                                <option value="sad">Sad / 难过</option>
+                                <option value="angry">Angry / 生气</option>
+                                <option value="excited">Excited / 激动</option>
+                                <option value="gentle">Gentle / 温柔</option>
+                                <option value="whisper">Whisper / 低语</option>
+                                <option value="surprised">Surprised / 惊讶</option>
+                                <option value="neutral">Neutral / 平静</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="presetSpeed">Speed (0.5 - 2.0)</label>
+                            <input type="number" id="presetSpeed" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="presetFormat">Output Format</label>
+                            <select id="presetFormat">
+                                <option value="mp3" selected>MP3</option>
+                                <option value="wav">WAV</option>
+                                <option value="ogg">OGG</option>
+                                <option value="opus">OPUS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="presetTemp">Temperature (0.1 - 2.0)</label>
+                            <input type="number" id="presetTemp" min="0.1" max="2.0" step="0.1" value="0.9">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="presetBtn">
+                        Generate Speech
+                    </button>
+                </form>
+            </div>
+
+            <!-- Voice Clone Mode -->
+            <div id="cloneTab" class="tab-content">
+                <form id="cloneForm" onsubmit="generateClone(event)">
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="cloneModel">Model</label>
+                            <select id="cloneModel">
+                                <option value="qwen3-tts-1.7b-base" selected>qwen3-tts-1.7b-base</option>
+                                <option value="qwen3-tts-0.6b-base">qwen3-tts-0.6b-base</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cloneFormat">Output Format</label>
+                            <select id="cloneFormat">
+                                <option value="mp3" selected>MP3</option>
+                                <option value="wav">WAV</option>
+                                <option value="ogg">OGG</option>
+                                <option value="opus">OPUS</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cloneAudio">Voice Sample (Audio File)</label>
+                        <input type="file" id="cloneAudio" accept="audio/*">
+                        <div class="help-text">Upload 3+ seconds of the voice you want to clone (WAV, MP3, etc.)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cloneSampleText">Voice Sample Text (Optional)</label>
+                        <textarea id="cloneSampleText" placeholder="Enter the text spoken in the sample (improves quality)...">Hello, this is my voice sample for cloning.</textarea>
+                        <div class="help-text">Leave empty for X-Vector only mode (lower quality but works with unknown text)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cloneText">Text to Speak</label>
+                        <textarea id="cloneText" placeholder="Enter text to synthesize with the cloned voice...">This is my voice being cloned! The technology is amazing.</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="cloneInstructions">Style/Emotion</label>
+                            <select id="cloneInstructions">
+                                <option value="">Default</option>
+                                <option value="happy" selected>Happy / 开心</option>
+                                <option value="sad">Sad / 难过</option>
+                                <option value="angry">Angry / 生气</option>
+                                <option value="excited">Excited / 激动</option>
+                                <option value="whisper">Whisper / 低语</option>
+                                <option value="neutral">Neutral / 平静</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cloneSpeed">Speed (0.5 - 2.0)</label>
+                            <input type="number" id="cloneSpeed" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="cloneTemp">Temperature</label>
+                            <input type="number" id="cloneTemp" min="0.1" max="2.0" step="0.1" value="0.9">
+                        </div>
+                        <div class="form-group">
+                            <label for="cloneTopP">Top P</label>
+                            <input type="number" id="cloneTopP" min="0.1" max="1.0" step="0.05" value="1.0">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="cloneBtn">
+                        Clone Voice & Generate
+                    </button>
+                </form>
+            </div>
+
+            <!-- Saved Voice Mode -->
+            <div id="savedTab" class="tab-content">
+                <form id="savedForm" onsubmit="generateSaved(event)">
+                    <div class="form-group">
+                        <button type="button" class="btn btn-secondary" onclick="loadSavedVoices()">
+                            Refresh Saved Voices
+                        </button>
+                        <div id="savedVoicesList" class="voice-list" style="display:none;">
+                            <div class="help-text">No saved voices found. Clone a voice first!</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="savedVoiceId">Voice ID</label>
+                            <input type="text" id="savedVoiceId" placeholder="e.g., voice_abc123">
+                        </div>
+                        <div class="form-group">
+                            <label for="savedModel">Model</label>
+                            <select id="savedModel">
+                                <option value="qwen3-tts-1.7b-base" selected>qwen3-tts-1.7b-base</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="savedText">Text to Speak</label>
+                        <textarea id="savedText" placeholder="Enter text to speak with your saved voice...">Hello! This is my saved cloned voice speaking.</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="savedInstructions">Style/Emotion</label>
+                            <select id="savedInstructions">
+                                <option value="">Default</option>
+                                <option value="happy">Happy</option>
+                                <option value="sad">Sad</option>
+                                <option value="whisper">Whisper</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="savedSpeed">Speed</label>
+                            <input type="number" id="savedSpeed" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="savedFormat">Output Format</label>
+                        <select id="savedFormat">
+                            <option value="mp3" selected>MP3</option>
+                            <option value="wav">WAV</option>
+                            <option value="ogg">OGG</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="savedBtn">
+                        Generate with Saved Voice
+                    </button>
+                </form>
+            </div>
+
+            <!-- Status and Audio Player -->
+            <div id="status" class="status"></div>
+            <div id="audioPlayer" class="audio-player">
+                <label>Generated Audio:</label>
+                <audio id="audioElement" controls></audio>
+                <a id="downloadLink" class="btn btn-secondary" download>Download Audio</a>
+            </div>
+        </div>
+
+        <!-- Save Voice Section -->
+        <div class="card">
+            <h2>💾 Save Cloned Voice</h2>
+            <p style="margin-bottom: 15px; color: #666;">
+                Save a voice permanently so you can reuse it without uploading the sample again.
+            </p>
+            <form id="saveVoiceForm" onsubmit="saveVoice(event)">
+                <div class="row">
+                    <div class="form-group">
+                        <label for="saveVoiceName">Voice Name</label>
+                        <input type="text" id="saveVoiceName" placeholder="e.g., My Narrator Voice" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="saveVoiceDesc">Description (Optional)</label>
+                        <input type="text" id="saveVoiceDesc" placeholder="e.g., Warm, professional voice">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="saveVoiceAudio">Voice Sample (Audio File)</label>
+                    <input type="file" id="saveVoiceAudio" accept="audio/*" required>
+                </div>
+                <div class="form-group">
+                    <label for="saveVoiceText">Sample Text (Optional)</label>
+                    <textarea id="saveVoiceText" placeholder="Text spoken in the sample..."></textarea>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="saveXVector">
+                    <label for="saveXVector" style="margin: 0;">X-Vector Only Mode (no text required)</label>
+                </div>
+                <button type="submit" class="btn btn-primary" id="saveVoiceBtn" style="margin-top: 15px;">
+                    Save Voice
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentAudioUrl = null;
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.replace(/\/$/, '');
+        }
+
+        function switchTab(mode) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(mode + 'Tab').classList.add('active');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status show ' + type;
+        }
+
+        function hideStatus() {
+            document.getElementById('status').className = 'status';
+        }
+
+        function setLoading(buttonId, loading) {
+            const btn = document.getElementById(buttonId);
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Processing...';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = btn.getAttribute('data-original-text') || btn.textContent;
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                showStatus('Checking API health...', 'loading');
+                const response = await fetch(getApiUrl() + '/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showStatus(`✅ API is healthy! Device: ${data.device}, Models loaded: ${data.models_loaded.join(', ') || 'None'}`, 'success');
+                } else {
+                    showStatus('❌ API health check failed', 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        async function loadSpeakers() {
+            try {
+                showStatus('Loading speakers...', 'loading');
+                const response = await fetch(getApiUrl() + '/v1/speakers');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let html = '<strong>Available Speakers:</strong><ul>';
+                    data.speakers.forEach(speaker => {
+                        html += `<li>${speaker.name} - ${speaker.description}</li>`;
+                    });
+                    html += '</ul>';
+                    showStatus(html, 'success');
+                } else {
+                    showStatus('❌ Failed to load speakers', 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        async function generatePreset(event) {
+            event.preventDefault();
+            setLoading('presetBtn', true);
+            hideStatus();
+
+            try {
+                const formData = new FormData();
+                formData.append('model', document.getElementById('presetModel').value);
+                formData.append('input', document.getElementById('presetText').value);
+                formData.append('voice', document.getElementById('presetSpeaker').value);
+                formData.append('response_format', document.getElementById('presetFormat').value);
+                formData.append('speed', document.getElementById('presetSpeed').value);
+                formData.append('temperature', document.getElementById('presetTemp').value);
+                
+                const instructions = document.getElementById('presetInstructions').value;
+                if (instructions) {
+                    formData.append('instructions', instructions);
+                }
+
+                const response = await fetch(getApiUrl() + '/v1/audio/speech', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    playAudio(blob, document.getElementById('presetFormat').value);
+                    showStatus('✅ Speech generated successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    showStatus('❌ Error: ' + (error.detail || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                setLoading('presetBtn', false);
+            }
+        }
+
+        async function generateClone(event) {
+            event.preventDefault();
+            
+            const audioFile = document.getElementById('cloneAudio').files[0];
+            if (!audioFile) {
+                showStatus('❌ Please select an audio file', 'error');
+                return;
+            }
+
+            setLoading('cloneBtn', true);
+            hideStatus();
+
+            try {
+                const formData = new FormData();
+                formData.append('model', document.getElementById('cloneModel').value);
+                formData.append('input', document.getElementById('cloneText').value);
+                formData.append('voice_sample', audioFile);
+                formData.append('response_format', document.getElementById('cloneFormat').value);
+                formData.append('speed', document.getElementById('cloneSpeed').value);
+                formData.append('temperature', document.getElementById('cloneTemp').value);
+                formData.append('top_p', document.getElementById('cloneTopP').value);
+
+                const sampleText = document.getElementById('cloneSampleText').value;
+                if (sampleText) {
+                    formData.append('voice_sample_text', sampleText);
+                }
+
+                const instructions = document.getElementById('cloneInstructions').value;
+                if (instructions) {
+                    formData.append('instructions', instructions);
+                }
+
+                const response = await fetch(getApiUrl() + '/v1/audio/speech', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    playAudio(blob, document.getElementById('cloneFormat').value);
+                    showStatus('✅ Voice cloned and speech generated!', 'success');
+                } else {
+                    const error = await response.json();
+                    showStatus('❌ Error: ' + (error.detail || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                setLoading('cloneBtn', false);
+            }
+        }
+
+        async function generateSaved(event) {
+            event.preventDefault();
+            
+            const voiceId = document.getElementById('savedVoiceId').value.trim();
+            if (!voiceId) {
+                showStatus('❌ Please enter a Voice ID', 'error');
+                return;
+            }
+
+            setLoading('savedBtn', true);
+            hideStatus();
+
+            try {
+                const formData = new FormData();
+                formData.append('model', document.getElementById('savedModel').value);
+                formData.append('input', document.getElementById('savedText').value);
+                formData.append('voice', voiceId);
+                formData.append('response_format', document.getElementById('savedFormat').value);
+                formData.append('speed', document.getElementById('savedSpeed').value);
+
+                const instructions = document.getElementById('savedInstructions').value;
+                if (instructions) {
+                    formData.append('instructions', instructions);
+                }
+
+                const response = await fetch(getApiUrl() + '/v1/audio/speech', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    playAudio(blob, document.getElementById('savedFormat').value);
+                    showStatus('✅ Speech generated with saved voice!', 'success');
+                } else {
+                    const error = await response.json();
+                    showStatus('❌ Error: ' + (error.detail || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                setLoading('savedBtn', false);
+            }
+        }
+
+        async function saveVoice(event) {
+            event.preventDefault();
+            
+            const audioFile = document.getElementById('saveVoiceAudio').files[0];
+            if (!audioFile) {
+                showStatus('❌ Please select an audio file', 'error');
+                return;
+            }
+
+            setLoading('saveVoiceBtn', true);
+            hideStatus();
+
+            try {
+                const formData = new FormData();
+                formData.append('name', document.getElementById('saveVoiceName').value);
+                formData.append('voice_sample', audioFile);
+
+                const desc = document.getElementById('saveVoiceDesc').value;
+                if (desc) {
+                    formData.append('description', desc);
+                }
+
+                const sampleText = document.getElementById('saveVoiceText').value;
+                if (sampleText) {
+                    formData.append('voice_sample_text', sampleText);
+                }
+
+                formData.append('x_vector_only', document.getElementById('saveXVector').checked);
+
+                const response = await fetch(getApiUrl() + '/v1/voices', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus(`✅ Voice saved! ID: ${data.voice_id}`, 'success');
+                    document.getElementById('savedVoiceId').value = data.voice_id;
+                } else {
+                    const error = await response.json();
+                    showStatus('❌ Error: ' + (error.detail || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                setLoading('saveVoiceBtn', false);
+            }
+        }
+
+        async function loadSavedVoices() {
+            try {
+                const response = await fetch(getApiUrl() + '/v1/voices');
+                const data = await response.json();
+
+                const listDiv = document.getElementById('savedVoicesList');
+                
+                if (data.voices.length === 0) {
+                    listDiv.innerHTML = '<div class="help-text">No saved voices found. Clone a voice first!</div>';
+                } else {
+                    let html = '';
+                    data.voices.forEach(voice => {
+                        html += `
+                            <div class="voice-item" onclick="document.getElementById('savedVoiceId').value='${voice.voice_id}'">
+                                <strong>${voice.name}</strong> (${voice.voice_id})<br>
+                                <small>${voice.description || 'No description'}</small>
+                            </div>
+                        `;
+                    });
+                    listDiv.innerHTML = html;
+                }
+                listDiv.style.display = 'block';
+            } catch (error) {
+                showStatus('❌ Error loading voices: ' + error.message, 'error');
+            }
+        }
+
+        function playAudio(blob, format) {
+            if (currentAudioUrl) {
+                URL.revokeObjectURL(currentAudioUrl);
+            }
+
+            currentAudioUrl = URL.createObjectURL(blob);
+            const audio = document.getElementById('audioElement');
+            const player = document.getElementById('audioPlayer');
+            const downloadLink = document.getElementById('downloadLink');
+
+            audio.src = currentAudioUrl;
+            player.classList.add('show');
+
+            downloadLink.href = currentAudioUrl;
+            downloadLink.download = `speech.${format}`;
+        }
+
+        // Store original button texts
+        document.querySelectorAll('.btn-primary').forEach(btn => {
+            btn.setAttribute('data-original-text', btn.textContent);
+        });
+    </script>
+</body>
+</html>

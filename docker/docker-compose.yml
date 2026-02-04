@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  qwen3-tts-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: qwen3-tts-api:latest
+    container_name: qwen3-tts-api
+    
+    # GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    ports:
+      - "8000:8000"
+    
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - MODEL_CACHE_DIR=/app/models
+      - VOICE_STORAGE_DIR=/app/voices
+      - DEVICE=auto
+      - PRECISION=bf16
+      - ENABLE_AUTO_DOWNLOAD=true
+      - LOG_LEVEL=INFO
+      # Optional: HuggingFace token for gated models
+      # - HF_TOKEN=your_token_here
+    
+    volumes:
+      # Persist models between restarts
+      - model-cache:/app/models
+      # Persist cloned voices
+      - voice-storage:/app/voices
+      # Optional: Mount custom .env file
+      # - ./.env:/app/.env:ro
+    
+    restart: unless-stopped
+    
+    # Increase shared memory for PyTorch
+    shm_size: '8gb'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  model-cache:
+    driver: local
+  voice-storage:
+    driver: local
