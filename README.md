@@ -17,6 +17,8 @@ OpenAI-compatible API service for Qwen3-TTS voice cloning and text-to-speech syn
 ## Quick Start
 
 ### Installation
+## Prerequisites:
+Please note, currently Python 3.14 and newer aren't supported, please use Python 3.8 to 3.12 
 
 ```bash
 # Clone or navigate to the workflow directory

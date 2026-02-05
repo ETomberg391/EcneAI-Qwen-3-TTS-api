@@ -1,36 +1,36 @@
-# Full requirements with all dependencies
-# Use this if the main requirements.txt has conflicts
-
 # FastAPI and Server
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-python-multipart==0.0.17
-pydantic==2.9.2
-pydantic-settings==2.6.1
-python-dotenv==1.0.1
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.5.0,<2.2.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
 
-# TTS Core
-torch==2.5.1
-torchaudio==2.5.1
-transformers==4.46.0
-accelerate==1.1.1
+# TTS Core (Strict versions for Qwen-TTS compatibility)
+torch>=2.0.0,<2.6.0
+torchaudio>=2.0.0,<2.6.0
+transformers==4.57.3
+accelerate>=0.25.0
+einops
+gradio
+onnxruntime
 
 # Audio Processing
-soundfile==0.12.1
-librosa==0.10.2.post1
-ffmpeg-python==0.2.0
-pydub==0.25.1
+soundfile>=0.12.1
+librosa>=0.10.1
+ffmpeg-python>=0.2.0
+pydub>=0.25.1
+sox
 
 # Model Download
-huggingface-hub==0.26.2
-modelscope==1.21.0
+huggingface-hub>=0.19.0
+modelscope>=1.9.0
 
 # Optional ASR
-funasr==1.1.12
+funasr>=1.0.0
 
 # Utilities
-numpy==1.26.4
-aiofiles==24.1.0
-
-# Install qwen-tts separately after these:
-# pip install qwen-tts==0.0.5
+# IMPORTANT: numpy must be < 2.0.0 for many older ML libraries to work
+numpy>=1.24.0,<2.0.0
+aiofiles>=23.0.0
+qwen-tts==0.0.5

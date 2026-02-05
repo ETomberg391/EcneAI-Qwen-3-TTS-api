@@ -1,4 +1,4 @@
-# Test GUI
+py# Test GUI
 
 This directory contains a simple web-based test GUI for the Qwen3-TTS API.
 

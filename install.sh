@@ -1,113 +1,67 @@
 #!/bin/bash
-# Installation script for Qwen3-TTS API
-
+# Fixed Installation script for Qwen3-TTS API
 set -e
 
 echo "=========================================="
 echo "Qwen3-TTS API Installation"
 echo "=========================================="
 
-# Check Python version
+# 1. Environment Check
 PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
-PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
-PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+echo "Using Python version: $PYTHON_VERSION"
 
-echo "Python version: $PYTHON_VERSION"
-
-# Check if Python version is supported by PyTorch
-if [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -ge 13 ]; then
-    echo ""
-    echo "ERROR: Python $PYTHON_VERSION is not supported by PyTorch yet."
-    echo "Please use Python 3.10, 3.11, or 3.12 instead."
-    echo ""
-    echo "To install a different Python version:"
-    echo "  - Ubuntu/Debian: sudo apt install python3.10 python3.10-venv"
-    echo "  - Then recreate venv: python3.10 -m venv venv"
-    echo ""
-    exit 1
-fi
-
-# Check for GPU
+# 2. GPU Detection
 if command -v nvidia-smi &> /dev/null; then
-    echo "NVIDIA GPU detected:"
-    nvidia-smi --query-gpu=name,driver_version --format=csv,noheader || true
+    echo "NVIDIA GPU detected. Preparing for CUDA..."
     USE_GPU=true
 else
-    echo "No NVIDIA GPU detected, using CPU"
+    echo "No NVIDIA GPU detected, defaulting to CPU-only."
     USE_GPU=false
 fi
 
-# Create virtual environment if it doesn't exist
+# 3. Virtual Environment Setup
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
     python3 -m venv venv
 fi
-
 source venv/bin/activate
 
-# Upgrade pip
-echo "Upgrading pip..."
+# 4. Clean Slate (Crucial to fix your current conflicts)
+echo "Cleaning up conflicting packages..."
+pip uninstall -y transformers numpy qwen-tts onnxruntime 2>/dev/null || true
+
+# 5. Base Upgrades
+echo "Upgrading pip/setuptools..."
 pip install --upgrade pip setuptools wheel
 
-# Install PyTorch with appropriate CUDA support
-echo ""
+# 6. PyTorch Installation (Optimized for Hardware)
 echo "Installing PyTorch..."
 if [ "$USE_GPU" = true ]; then
-    echo "Installing PyTorch with CUDA support..."
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 else
-    echo "Installing PyTorch (CPU only)..."
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 fi
 
-# Install transformers and other core ML packages
-echo ""
-echo "Installing ML dependencies..."
-pip install transformers accelerate
-
-# Install audio processing
-echo ""
-echo "Installing audio processing libraries..."
-pip install soundfile librosa ffmpeg-python pydub
-
-# Install API framework
-echo ""
-echo "Installing API framework..."
-pip install fastapi uvicorn[standard] python-multipart
-pip install pydantic pydantic-settings python-dotenv
-
-# Install model download utilities
-echo ""
-echo "Installing model utilities..."
-pip install huggingface-hub modelscope
-
-# Install utilities
-echo ""
-echo "Installing utilities..."
-pip install numpy aiofiles
-
-# Try to install onnxruntime (required by qwen-tts)
-echo ""
-echo "Installing onnxruntime..."
-if [ "$USE_GPU" = true ]; then
-    pip install onnxruntime-gpu || pip install onnxruntime || echo "WARNING: onnxruntime installation failed"
+# 7. Main Installation
+if [ -f "requirements.txt" ]; then
+    echo "Installing dependencies from requirements.txt..."
+    pip install -r requirements.txt
 else
-    pip install onnxruntime || echo "WARNING: onnxruntime installation failed"
+    echo "ERROR: requirements.txt not found! Please create it first."
+    exit 1
 fi
 
-# Install qwen-tts without dependencies (to avoid conflicts)
-echo ""
-echo "Installing qwen-tts..."
-pip install qwen-tts --no-deps || echo "WARNING: qwen-tts installation failed"
+# 8. Post-Install Fix for ONNX GPU
+if [ "$USE_GPU" = true ]; then
+    echo "Swapping to onnxruntime-gpu..."
+    pip uninstall -y onnxruntime
+    pip install onnxruntime-gpu
+fi
 
 echo ""
 echo "=========================================="
-echo "Installation complete!"
+echo "SUCCESS: Environment is ready."
 echo "=========================================="
-echo ""
 echo "To start the server:"
 echo "  source venv/bin/activate"
 echo "  python -m uvicorn api.main:app --host 0.0.0.0 --port 8000"
-echo ""
-echo "Then open static/test_gui.html in your browser"
-echo ""
