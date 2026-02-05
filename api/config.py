@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     PRECISION: Literal["bf16", "fp16", "fp32"] = "bf16"
     ATTN_MODE: Literal["sdpa", "flash_attention_2", "eager", "sage_attention"] = "sdpa"
     ENABLE_AUTO_DOWNLOAD: bool = True
+    PRELOAD_MODELS: Optional[str] = None  # Comma-separated list of models to preload on startup
     
     # Voice Storage
     VOICE_STORAGE_DIR: str = "./voices"

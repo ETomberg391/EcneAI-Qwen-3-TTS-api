@@ -42,6 +42,33 @@ async def lifespan(app: FastAPI):
     logger.info(f"Auto Download: {settings.ENABLE_AUTO_DOWNLOAD}")
     logger.info("=" * 60)
     
+    # Preload models on startup if configured
+    if settings.PRELOAD_MODELS:
+        from api.services.model_manager import model_manager
+        from api.config import MODEL_REPOS
+        
+        logger.info("Preloading models on startup...")
+        models_to_preload = settings.PRELOAD_MODELS
+        if isinstance(models_to_preload, str):
+            models_to_preload = [m.strip() for m in models_to_preload.split(",")]
+        
+        for model_name in models_to_preload:
+            model_name = model_name.strip()
+            if model_name not in MODEL_REPOS:
+                logger.warning(f"  ⚠️ Unknown model in PRELOAD_MODELS: {model_name}")
+                continue
+            
+            logger.info(f"  Loading {model_name}...")
+            try:
+                if model_manager.preload_model(model_name):
+                    logger.info(f"  ✅ {model_name} loaded successfully")
+                else:
+                    logger.error(f"  ❌ Failed to load {model_name}")
+            except Exception as e:
+                logger.error(f"  ❌ Error loading {model_name}: {e}")
+        
+        logger.info("Model preloading complete")
+    
     yield
     
     # Shutdown

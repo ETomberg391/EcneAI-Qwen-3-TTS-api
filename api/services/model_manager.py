@@ -376,6 +376,128 @@ class ModelManager:
     def is_model_loaded(self, model_name: str) -> bool:
         """Check if a model is currently loaded."""
         return model_name in self._models
+    
+    def is_model_downloaded(self, model_name: str) -> bool:
+        """
+        Check if a model is downloaded locally.
+        
+        Args:
+            model_name: Model identifier
+            
+        Returns:
+            True if model files exist locally
+        """
+        if model_name not in MODEL_REPOS:
+            return False
+        
+        repo_id = MODEL_REPOS[model_name][settings.MODEL_SOURCE]
+        local_name = repo_id.replace("/", "--")
+        local_path = self.cache_dir / local_name
+        
+        # Check if directory exists and has files
+        if not local_path.exists():
+            return False
+        
+        # Check for essential model files
+        try:
+            files = list(local_path.iterdir())
+            if not files:
+                return False
+            
+            # Check for model file indicators
+            has_model_files = any(
+                f.name.endswith(('.bin', '.safetensors', '.json', '.txt'))
+                for f in files
+            )
+            return has_model_files
+        except Exception:
+            return False
+    
+    def get_model_status(self, model_name: str) -> dict:
+        """
+        Get detailed status of a model.
+        
+        Args:
+            model_name: Model identifier
+            
+        Returns:
+            Dict with download and load status
+        """
+        if model_name not in MODEL_REPOS:
+            return {
+                "model_id": model_name,
+                "downloaded": False,
+                "loaded": False,
+                "error": "Unknown model"
+            }
+        
+        repo_id = MODEL_REPOS[model_name][settings.MODEL_SOURCE]
+        local_name = repo_id.replace("/", "--")
+        local_path = self.cache_dir / local_name
+        
+        # Calculate size if downloaded
+        size_gb = None
+        if local_path.exists():
+            try:
+                total_size = sum(
+                    f.stat().st_size for f in local_path.rglob('*') if f.is_file()
+                )
+                size_gb = round(total_size / (1024**3), 2)
+            except Exception:
+                pass
+        
+        return {
+            "model_id": model_name,
+            "downloaded": self.is_model_downloaded(model_name),
+            "loaded": self.is_model_loaded(model_name),
+            "path": str(local_path) if local_path.exists() else None,
+            "size_gb": size_gb
+        }
+    
+    def get_all_models_status(self) -> list:
+        """Get status of all available models."""
+        return [self.get_model_status(name) for name in MODEL_REPOS.keys()]
+    
+    def download_model(self, model_name: str) -> bool:
+        """
+        Download a model without loading it.
+        
+        Args:
+            model_name: Model identifier
+            
+        Returns:
+            True if download successful
+        """
+        if model_name not in MODEL_REPOS:
+            raise ValueError(f"Unknown model: {model_name}")
+        
+        if self.is_model_downloaded(model_name):
+            logger.info(f"Model {model_name} already downloaded")
+            return True
+        
+        try:
+            self._get_model_path(model_name)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to download model {model_name}: {e}")
+            return False
+    
+    def preload_model(self, model_name: str) -> bool:
+        """
+        Download and load a model.
+        
+        Args:
+            model_name: Model identifier
+            
+        Returns:
+            True if preload successful
+        """
+        try:
+            self.get_model(model_name)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to preload model {model_name}: {e}")
+            return False
 
 
 # Global model manager instance

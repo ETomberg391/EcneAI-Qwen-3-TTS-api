@@ -89,6 +89,25 @@ async def create_speech(
                 detail=f"Invalid response_format. Must be one of: {list(AUDIO_FORMATS.keys())}"
             )
         
+        # Determine which model will be used
+        actual_model = model
+        if voice in PRESET_SPEAKERS and "customvoice" not in model:
+            actual_model = "qwen3-tts-1.7b-customvoice"
+        
+        # Check if model is available (either downloaded or auto-download enabled)
+        from api.services.model_manager import model_manager
+        if not model_manager.is_model_downloaded(actual_model):
+            if not settings.ENABLE_AUTO_DOWNLOAD:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Model '{actual_model}' is not downloaded and auto-download is disabled. "
+                           f"Please download it first: POST /v1/models/{actual_model}/download "
+                           f"or set ENABLE_AUTO_DOWNLOAD=true"
+                )
+            else:
+                # Auto-download is enabled, we'll proceed and let the service handle it
+                logger.info(f"Model {actual_model} not downloaded, will auto-download on first use")
+        
         # Check if using preset speaker
         if voice in PRESET_SPEAKERS:
             # Use customvoice model with preset speaker
@@ -156,6 +175,26 @@ async def create_speech(
         
     except HTTPException:
         raise
+    except FileNotFoundError as e:
+        logger.error(f"Model file not found: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Model not found: {str(e)}. "
+                   f"Please ensure models are downloaded. "
+                   f"Check status at: GET /v1/models/status"
+        )
+    except RuntimeError as e:
+        error_str = str(e).lower()
+        if "model" in error_str and ("load" in error_str or "download" in error_str):
+            logger.error(f"Model loading error: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail=f"Model loading failed: {str(e)}. "
+                       f"Please check your model installation or try downloading again."
+            )
+        else:
+            logger.error(f"Runtime error generating speech: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"Error generating speech: {e}")
         raise HTTPException(status_code=500, detail=str(e))

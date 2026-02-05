@@ -148,6 +148,56 @@ class PresetSpeakersList(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response."""
+    error: str = Field(..., description="Error message")
+    detail: Optional[str] = Field(default=None, description="Detailed error information")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "error": "Model not found",
+                "detail": "Model qwen3-tts-1.7b-base is not downloaded. Run download first."
+            }
+        }
+
+
+class ModelStatus(BaseModel):
+    """Model download/load status."""
+    model_id: str = Field(..., description="Model identifier")
+    downloaded: bool = Field(..., description="Whether model files are downloaded")
+    loaded: bool = Field(..., description="Whether model is loaded in memory")
+    path: Optional[str] = Field(default=None, description="Local path to model")
+    size_gb: Optional[float] = Field(default=None, description="Model size in GB")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "model_id": "qwen3-tts-1.7b-base",
+                "downloaded": True,
+                "loaded": False,
+                "path": "/path/to/models/Qwen--Qwen3-TTS-1.7B-base",
+                "size_gb": 3.4
+            }
+        }
+
+
+class ModelLoadResponse(BaseModel):
+    """Response from model load/download endpoint."""
+    success: bool = Field(..., description="Whether operation succeeded")
+    model_id: str = Field(..., description="Model identifier")
+    message: str = Field(..., description="Status message")
+    downloaded: bool = Field(..., description="Whether model is now downloaded")
+    loaded: bool = Field(..., description="Whether model is now loaded")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "model_id": "qwen3-tts-1.7b-base",
+                "message": "Model downloaded and loaded successfully",
+                "downloaded": True,
+                "loaded": True
+            }
+        }
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
     details: Optional[dict] = Field(default=None)
